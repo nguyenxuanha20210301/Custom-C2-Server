@@ -7,18 +7,18 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgres://postgres:password@db:5432/customc2
-      - JWT_SECRET=ChangeMe_32chars_min
-      - AUTH_DISABLED=false
-      - STORAGE_DRIVER=minio
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minio
-      - MINIO_SECRET_KEY=minio123
-      - MINIO_SECURE=false
-      - MINIO_BUCKET=c2-artifacts
-      - LOCAL_STORAGE_DIR=/app/data
-      - DEFAULT_ADMIN_USER=admin
-      - DEFAULT_ADMIN_PASS=ChangeMe_123!
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - AUTH_DISABLED=${AUTH_DISABLED}
+      - STORAGE_DRIVER=${STORAGE_DRIVER}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_SECURE=${MINIO_SECURE}
+      - MINIO_BUCKET=${MINIO_BUCKET}
+      - LOCAL_STORAGE_DIR=${LOCAL_STORAGE_DIR}
+      - DEFAULT_ADMIN_USER=${DEFAULT_ADMIN_USER}
+      - DEFAULT_ADMIN_PASS=${DEFAULT_ADMIN_PASS}
     volumes:
       - serverdata:/app/data
     depends_on:
@@ -43,8 +43,8 @@ services:
       - MINIO_ROOT_USER=minio
       - MINIO_ROOT_PASSWORD=minio123
     ports:
-      - "9000:9000"   # S3 API
-      - "9001:9001"   # Web console
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_data:/data
 

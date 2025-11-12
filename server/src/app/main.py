@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 from .routes import auth, agents, tasks, files, health
+from .db import Base, engine, SessionLocal
+from .auth import ensure_admin_exists
+from .config import settings
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -8,12 +11,17 @@ def create_app() -> FastAPI:
         description="No remote code execution. Benign tasks only.",
     )
 
-    app.include_router(health.router, prefix="/api/v1", tags=["health"])
-    app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-    app.include_router(agents.router, prefix="/api/v1/agents", tags=["agents"])
-    app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
-    app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
+    # Khởi tạo DB (dev)
+    Base.metadata.create_all(bind=engine)
+    with SessionLocal() as db:
+        ensure_admin_exists(db)
 
+    # Routers
+    app.include_router(health.router, prefix=settings.api_prefix, tags=["health"])
+    app.include_router(auth.router, prefix=f"{settings.api_prefix}/auth", tags=["auth"])
+    app.include_router(agents.router, prefix=f"{settings.api_prefix}/agents", tags=["agents"])
+    app.include_router(tasks.router, prefix=f"{settings.api_prefix}/tasks", tags=["tasks"])
+    app.include_router(files.router, prefix=f"{settings.api_prefix}/files", tags=["files"])
     return app
 
 app = create_app()

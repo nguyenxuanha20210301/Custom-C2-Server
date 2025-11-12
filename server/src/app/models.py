@@ -2,7 +2,10 @@ from typing import List, Optional, Dict, Any, Literal
 from uuid import UUID
 from pydantic import BaseModel, Field
 
-# ===== Auth =====
+Platform = Literal["linux", "windows", "macos", "other"]
+TaskType = Literal["collect-metrics", "download-config", "upload-report"]
+
+# Auth
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -12,15 +15,12 @@ class TokenResponse(BaseModel):
     refresh_token: Optional[str] = None
     expires_in: int = 3600
 
-# ===== Agents =====
-Platform = Literal["linux", "windows", "macos", "other"]
-TaskType = Literal["collect-metrics", "download-config", "upload-report"]
-
+# Agents
 class AgentRegisterRequest(BaseModel):
     hostname: str
     platform: Platform = "linux"
     tags: Optional[List[str]] = Field(default_factory=list)
-    public_key: Optional[str] = None  # base64/cert thumbprint (optional)
+    public_key: Optional[str] = None
 
 class AgentRegisterResponse(BaseModel):
     agent_id: UUID
@@ -33,12 +33,12 @@ class HeartbeatRequest(BaseModel):
     ip: Optional[str] = None
     tags: Optional[List[str]] = Field(default_factory=list)
 
-# ===== Tasks =====
+# Tasks
 class TaskItem(BaseModel):
     task_id: UUID
     type: TaskType
-    payload: Dict[str, Any] = Field(default_factory=dict)  # benign descriptor only
-    created_at: str  # ISO 8601
+    payload: Dict[str, Any] = Field(default_factory=dict)
+    created_at: str
 
 class CreateTaskRequest(BaseModel):
     agent_ids: List[UUID]
@@ -49,7 +49,7 @@ class CreateTaskRequest(BaseModel):
 class CreateTaskResponse(BaseModel):
     task_id: UUID
 
-# ===== Files =====
+# Files
 class FileUploadResponse(BaseModel):
     file_id: UUID
     url: str

@@ -17,5 +17,8 @@ COPY src ./src
 RUN useradd -m appuser
 USER appuser
 
+# đảm bảo Python thấy /app/src
+ENV PYTHONPATH=/app/src
+
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "/app/src"]

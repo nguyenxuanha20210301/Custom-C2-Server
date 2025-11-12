@@ -1,14 +1,23 @@
-from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import RedirectResponse
-from .agents import FILES  # in-memory prototype
+from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.responses import FileResponse, JSONResponse
+from sqlalchemy.orm import Session
+from ..db import get_db
+from ..db_models import FileMeta
+from ..config import settings
+import os
 
 router = APIRouter()
 
 @router.get("/{file_id}")
-def get_file(file_id: str):
-    file_meta = FILES.get(file_id)
-    if not file_meta:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
-    # Prototype: không có signed URL thật; trả 200/redirect giả lập
-    # Phase 3: generate signed URL từ MinIO/S3
-    return {"file": file_meta, "message": "In dev, content is stored in-memory only"}
+def get_file(file_id: str, db: Session = Depends(get_db)):
+    meta = db.get(FileMeta, file_id)
+    if not meta:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    if settings.storage_driver == "local":
+        if not os.path.exists(meta.storage_key):
+            raise HTTPException(status_code=404, detail="File not found on disk")
+        return FileResponse(meta.storage_key, media_type=meta.content_type, filename=meta.name)
+    else:
+        # Phase sau có thể trả signed URL; hiện trả metadata
+        return JSONResponse({"file_id": meta.id, "name": meta.name, "content_type": meta.content_type, "size": meta.size})
