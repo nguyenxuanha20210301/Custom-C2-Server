@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.env
+*.env
+
+# Virtualenv
+venv/
+.env/
+
+# Docker
+docker-compose.override.yml
+*.log
+
+# Node
+node_modules/
+npm-debug.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# Pytest
+.coverage
+htmlcov/
+
+# Others
+.DS_Store
+
+# file explain
+docs/explain-file.md

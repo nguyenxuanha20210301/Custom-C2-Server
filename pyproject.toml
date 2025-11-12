@@ -1,0 +1,11 @@
+[tool.poetry]
+name = "custom-c2-simulator"
+version = "0.1.0"
+description = "C2 simulator (academic) - safe"
+authors = ["Your Name <you@example.com>"]
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+line-length = 88
