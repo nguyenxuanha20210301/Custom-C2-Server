@@ -8,7 +8,23 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgres://postgres:password@db:5432/customc2
+      - JWT_SECRET=ChangeMe_32chars_min
+      - AUTH_DISABLED=false
+      - STORAGE_DRIVER=minio
       - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minio
+      - MINIO_SECRET_KEY=minio123
+      - MINIO_SECURE=false
+      - MINIO_BUCKET=c2-artifacts
+      - LOCAL_STORAGE_DIR=/app/data
+      - DEFAULT_ADMIN_USER=admin
+      - DEFAULT_ADMIN_PASS=ChangeMe_123!
+    volumes:
+      - serverdata:/app/data
+    depends_on:
+      - db
+      - minio
+
   db:
     image: postgres:15
     environment:
@@ -17,13 +33,22 @@ services:
       - POSTGRES_DB=customc2
     volumes:
       - dbdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
   minio:
     image: minio/minio
-    command: server /data
+    command: server /data --console-address ":9001"
     environment:
       - MINIO_ROOT_USER=minio
       - MINIO_ROOT_PASSWORD=minio123
     ports:
-      - "9000:9000"
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    volumes:
+      - minio_data:/data
+
 volumes:
   dbdata:
+  serverdata:
+  minio_data:

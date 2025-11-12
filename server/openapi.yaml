@@ -1,0 +1,276 @@
+openapi: 3.0.3
+info:
+  title: Custom C2 Simulator API (Academic, Safe)
+  version: 0.1.0
+  description: >
+    API mô phỏng quản lý agents (register, heartbeat, benign tasks, file upload/download).
+    KHÔNG hỗ trợ thực thi lệnh từ xa. Dùng cho mục đích học thuật.
+
+servers:
+  - url: https://localhost:8000
+    description: Dev (self-signed TLS)
+
+tags:
+  - name: auth
+  - name: agents
+  - name: tasks
+  - name: files
+  - name: audit
+  - name: health
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string, format: password }
+
+    TokenResponse:
+      type: object
+      required: [access_token, expires_in]
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string, nullable: true }
+        expires_in: { type: integer, example: 3600 }
+
+    AgentRegisterRequest:
+      type: object
+      required: [hostname, platform]
+      properties:
+        hostname: { type: string }
+        platform: { type: string, enum: [linux, windows, macos, other] }
+        tags:
+          type: array
+          items: { type: string }
+        public_key:
+          type: string
+          description: Base64 hoặc certificate thumbprint (optional)
+    AgentRegisterResponse:
+      type: object
+      required: [agent_id, poll_interval, config]
+      properties:
+        agent_id: { type: string, format: uuid }
+        poll_interval: { type: integer, example: 60 }
+        config: { type: object, additionalProperties: true }
+
+    HeartbeatRequest:
+      type: object
+      required: [uptime, load]
+      properties:
+        uptime: { type: integer }
+        load: { type: number }
+        ip: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+
+    TaskItem:
+      type: object
+      required: [task_id, type, payload, created_at]
+      properties:
+        task_id: { type: string, format: uuid }
+        type: { type: string, enum: [collect-metrics, download-config, upload-report] }
+        payload:
+          type: object
+          description: Benign descriptor (vd: file_id). KHÔNG chứa lệnh thực thi.
+          additionalProperties: true
+        created_at: { type: string, format: date-time }
+
+    CreateTaskRequest:
+      type: object
+      required: [agent_ids, type]
+      properties:
+        agent_ids:
+          type: array
+          items: { type: string, format: uuid }
+        type:
+          type: string
+          enum: [collect-metrics, download-config, upload-report]
+        meta:
+          type: object
+          additionalProperties: true
+        expires_in:
+          type: integer
+          example: 3600
+
+    FileUploadResponse:
+      type: object
+      required: [file_id, url]
+      properties:
+        file_id: { type: string, format: uuid }
+        url: { type: string, format: uri }
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/v1/health:
+    get:
+      tags: [health]
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+
+  /api/v1/auth/login:
+    post:
+      tags: [auth]
+      summary: Login (operators)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: JWT tokens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        '200':
+          description: New access token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+
+  /api/v1/agents/register:
+    post:
+      tags: [agents]
+      summary: Agent registration
+      security: []  # có thể dùng mTLS thay vì JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AgentRegisterRequest' }
+      responses:
+        '200':
+          description: Registered
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentRegisterResponse' }
+
+  /api/v1/agents/{agent_id}/heartbeat:
+    post:
+      tags: [agents]
+      summary: Heartbeat
+      security: []  # agents có thể auth bằng mTLS hoặc token máy
+      parameters:
+        - in: path
+          name: agent_id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HeartbeatRequest' }
+      responses:
+        '200':
+          description: OK
+
+  /api/v1/agents/{agent_id}/tasks:
+    get:
+      tags: [agents]
+      summary: Get pending benign tasks
+      parameters:
+        - in: path
+          name: agent_id
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+      responses:
+        '200':
+          description: List tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TaskItem' }
+
+  /api/v1/agents/{agent_id}/upload:
+    put:
+      tags: [agents, files]
+      summary: Agent upload benign file (report)
+      parameters:
+        - in: path
+          name: agent_id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Uploaded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileUploadResponse' }
+
+  /api/v1/files/{file_id}:
+    get:
+      tags: [files]
+      summary: Download benign file (signed URL or stream)
+      parameters:
+        - in: path
+          name: file_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '302':
+          description: Redirect to signed URL
+        '200':
+          description: Streamed content (impl-specific)
+
+  /api/v1/tasks:
+    post:
+      tags: [tasks]
+      summary: Create benign tasks (operators)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTaskRequest' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [task_id]
+                properties:
+                  task_id: { type: string, format: uuid }
