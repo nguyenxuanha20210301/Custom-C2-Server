@@ -4,6 +4,7 @@ from typing import Tuple
 from .config import settings
 from minio import Minio
 
+
 def _minio_client():
     return Minio(
         settings.minio_endpoint,
@@ -12,10 +13,12 @@ def _minio_client():
         secure=settings.minio_secure,
     )
 
+
 def ensure_bucket():
     client = _minio_client()
     if not client.bucket_exists(settings.minio_bucket):
         client.make_bucket(settings.minio_bucket)
+
 
 def store_bytes(content: bytes, filename: str, content_type: str) -> Tuple[str, str]:
     file_id = str(uuid4())

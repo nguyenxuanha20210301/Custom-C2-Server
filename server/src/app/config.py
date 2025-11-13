@@ -1,6 +1,7 @@
 import os
 from pydantic import BaseModel
 
+
 class Settings(BaseModel):
     # Phase 0
     environment: str = os.getenv("ENVIRONMENT", "development")
@@ -39,5 +40,6 @@ class Settings(BaseModel):
     # Agent defaults
     agent_default_poll_sec: int = int(os.getenv("AGENT_DEFAULT_POLL_SEC", "60"))
     hb_retention_days: int = int(os.getenv("HEARTBEAT_RETENTION_DAYS", "30"))
+
 
 settings = Settings()

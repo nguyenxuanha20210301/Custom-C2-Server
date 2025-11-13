@@ -7,6 +7,7 @@ from ..auth import verify_password, create_access_token
 
 router = APIRouter()
 
+
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == payload.username).first()
@@ -14,6 +15,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     token = create_access_token(sub=user.username, role=user.role)
     return TokenResponse(access_token=token, refresh_token=None, expires_in=3600)
+
 
 @router.post("/refresh", response_model=TokenResponse)
 def refresh(_: dict):

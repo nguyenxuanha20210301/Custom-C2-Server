@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 from ..db import get_db
@@ -7,6 +7,7 @@ from ..config import settings
 import os
 
 router = APIRouter()
+
 
 @router.get("/{file_id}")
 def get_file(file_id: str, db: Session = Depends(get_db)):
@@ -20,4 +21,7 @@ def get_file(file_id: str, db: Session = Depends(get_db)):
         return FileResponse(meta.storage_key, media_type=meta.content_type, filename=meta.name)
     else:
         # Phase sau có thể trả signed URL; hiện trả metadata
-        return JSONResponse({"file_id": meta.id, "name": meta.name, "content_type": meta.content_type, "size": meta.size})
+        return JSONResponse({"file_id": meta.id,
+                             "name": meta.name,
+                             "content_type": meta.content_type,
+                             "size": meta.size})

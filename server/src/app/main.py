@@ -6,6 +6,7 @@ from .config import settings
 from .metrics import MetricsMiddleware, metrics_endpoint
 from .web import routes as web_routes
 
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Custom C2 Simulator API (Academic, Safe)",
@@ -16,7 +17,6 @@ def create_app() -> FastAPI:
     app.add_middleware(MetricsMiddleware)
     app.add_api_route("/metrics", metrics_endpoint, methods=["GET"], include_in_schema=False)
 
-      # Đảm bảo schema luôn có (dev, test, thậm chí prod với SQLite)
     Base.metadata.create_all(bind=engine)
 
     # Sau khi có bảng rồi mới ensure admin
@@ -33,5 +33,6 @@ def create_app() -> FastAPI:
     # Web dashboard
     app.include_router(web_routes.router, prefix="/web", tags=["web"])
     return app
+
 
 app = create_app()

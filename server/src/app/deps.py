@@ -8,6 +8,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 JWT_SECRET = os.getenv("JWT_SECRET", None)  # <<THAY_THEO_BAN: bắt buộc khi bật auth>>
 AUTH_DISABLED = os.getenv("AUTH_DISABLED", "true").lower() == "true"  # cho dev
 
+
 def require_auth(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     """
     Auth stub cho operators.

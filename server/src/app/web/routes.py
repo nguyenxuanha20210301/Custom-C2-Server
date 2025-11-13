@@ -12,6 +12,7 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 router = APIRouter()
 
+
 @router.get("")
 def index(request: Request, db: Session = Depends(get_db)):
     stats = {
@@ -24,15 +25,18 @@ def index(request: Request, db: Session = Depends(get_db)):
         {"request": request, "title": "Dashboard", "stats": stats},
     )
 
+
 @router.get("/agents")
 def agents(request: Request, db: Session = Depends(get_db)):
     agents = db.query(Agent).order_by(Agent.created_at.desc()).limit(100).all()
     return templates.TemplateResponse("agents.html", {"request": request, "agents": agents})
 
+
 @router.get("/tasks")
 def tasks(request: Request, db: Session = Depends(get_db)):
     tasks = db.query(Task).order_by(Task.created_at.desc()).limit(100).all()
     return templates.TemplateResponse("tasks.html", {"request": request, "tasks": tasks})
+
 
 @router.get("/files")
 def files(request: Request, db: Session = Depends(get_db)):
