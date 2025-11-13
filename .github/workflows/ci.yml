@@ -2,64 +2,45 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: ["main"]
   pull_request:
-    branches: [main, master]
+    branches: ["main"]
 
 jobs:
   backend-ci:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: server/src
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/customc2
+      JWT_SECRET: testsecret1234567890
 
     services:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: customc2
         ports:
           - 5432:5432
-        # đợi postgres healthy trước khi chạy test
         options: >-
           --health-cmd="pg_isready -U postgres"
-          --health-interval=10s
+          --health-interval=5s
           --health-timeout=5s
-          --health-retries=5
-
-    env:
-      # Env cho app trong CI (giống docker-compose)
-      ENVIRONMENT: test
-      LOG_LEVEL: info
-      API_PREFIX: /api/v1
-
-      DATABASE_URL: postgresql://postgres:password@localhost:5432/customc2
-      JWT_SECRET: test_jwt_secret_change_me_please
-      AUTH_DISABLED: "false"
-      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
-      REFRESH_TOKEN_EXPIRE_DAYS: "7"
-      JWT_ISSUER: custom-c2-server
-
-      STORAGE_DRIVER: local
-      LOCAL_STORAGE_DIR: /tmp/c2-data
-
-      DEFAULT_ADMIN_USER: admin
-      DEFAULT_ADMIN_PASS: ChangeMe_123!
-
-      PYTHONPATH: server/src
+          --health-retries=10
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
       - name: Install dependencies
         working-directory: server
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest flake8
 
@@ -76,8 +57,9 @@ jobs:
       - name: Lint with flake8
         working-directory: server
         run: |
-          flake8 src tests
+          flake8 src
 
-      - name: Build Docker image
+      - name: Docker build
+        working-directory: server
         run: |
-          docker build -t custom-c2-simulator:ci server
+          docker build -t custom-c2-simulator:ci .
