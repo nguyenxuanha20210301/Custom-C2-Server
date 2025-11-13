@@ -16,10 +16,10 @@ def create_app() -> FastAPI:
     app.add_middleware(MetricsMiddleware)
     app.add_api_route("/metrics", metrics_endpoint, methods=["GET"], include_in_schema=False)
 
-    if settings.environment == "development":
-        # dev local không chạy alembic thì vẫn tạo bảng
-        Base.metadata.create_all(bind=engine)
+      # Đảm bảo schema luôn có (dev, test, thậm chí prod với SQLite)
+    Base.metadata.create_all(bind=engine)
 
+    # Sau khi có bảng rồi mới ensure admin
     with SessionLocal() as db:
         ensure_admin_exists(db)
 
