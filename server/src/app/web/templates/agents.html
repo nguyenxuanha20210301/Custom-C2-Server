@@ -1,0 +1,25 @@
+{% extends "base.html" %} {% block content %}
+<h3>Agents</h3>
+<table class="table table-sm table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Hostname</th>
+      <th>Platform</th>
+      <th>Tags</th>
+      <th>Created</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for a in agents %}
+    <tr>
+      <td class="text-monospace" style="font-size: 0.85rem">{{ a.id }}</td>
+      <td>{{ a.hostname }}</td>
+      <td>{{ a.platform }}</td>
+      <td>{{ a.tags }}</td>
+      <td>{{ a.created_at }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %} {% block content %}
+<h3>Files</h3>
+<table class="table table-sm table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Size</th>
+      <th>Created</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for f in files %}
+    <tr>
+      <td class="text-monospace" style="font-size: 0.85rem">{{ f.id }}</td>
+      <td>{{ f.name }}</td>
+      <td>{{ f.content_type }}</td>
+      <td>{{ f.size }}</td>
+      <td>{{ f.created_at }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict, Any, Literal
 from uuid import UUID
 from pydantic import BaseModel, Field
+from typing import Optional
 
 Platform = Literal["linux", "windows", "macos", "other"]
 TaskType = Literal["collect-metrics", "download-config", "upload-report"]
@@ -53,3 +54,22 @@ class CreateTaskResponse(BaseModel):
 class FileUploadResponse(BaseModel):
     file_id: UUID
     url: str
+
+class TaskFilter(BaseModel):
+    status: Optional[str] = None
+    type: Optional[TaskType] = None
+    agent_id: Optional[UUID] = None
+
+class TaskSummary(BaseModel):
+    id: UUID
+    type: TaskType
+    status: str
+    created_at: str
+
+class AgentTaskAck(BaseModel):
+    ack: bool = True
+
+class AgentTaskUpdate(BaseModel):
+    status: str  # running|done|failed|canceled
+    result: Dict[str, Any] | None = None
+    error: str | None = None

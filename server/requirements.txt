@@ -9,3 +9,5 @@ PyJWT==2.9.0
 passlib==1.7.4
 minio==7.2.7
 python-dotenv==1.0.1
+Jinja2==3.1.4
+prometheus-client==0.21.0

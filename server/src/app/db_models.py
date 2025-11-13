@@ -3,11 +3,14 @@ from sqlalchemy import String, Integer, DateTime, ForeignKey, JSON
 from uuid import uuid4
 from datetime import datetime, timezone
 from .db import Base
+from sqlalchemy import Enum, Text
 
 def now():
     return datetime.now(timezone.utc)
 
 UUIDCol = String(36)  # portable
+TaskStatus = String(16)  # queued|running|done|failed|canceled
+ATStatus   = String(16)
 
 class User(Base):
     __tablename__ = "users"
@@ -38,8 +41,12 @@ class Heartbeat(Base):
 class Task(Base):
     __tablename__ = "tasks"
     id: Mapped[str] = mapped_column(UUIDCol, primary_key=True, default=lambda: str(uuid4()))
-    type: Mapped[str] = mapped_column(String(32))  # benign only
+    type: Mapped[str] = mapped_column(String(32))  # chỉ benign
     payload: Mapped[dict] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(TaskStatus, default="queued")
+    result: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # tổng hợp nếu global
+    due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 class AgentTask(Base):
@@ -47,7 +54,12 @@ class AgentTask(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     agent_id: Mapped[str] = mapped_column(UUIDCol, ForeignKey("agents.id", ondelete="CASCADE"))
     task_id: Mapped[str] = mapped_column(UUIDCol, ForeignKey("tasks.id", ondelete="CASCADE"))
+    status: Mapped[str] = mapped_column(ATStatus, default="pending")
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     assigned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 class FileMeta(Base):
     __tablename__ = "files"

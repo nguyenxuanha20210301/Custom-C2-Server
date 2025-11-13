@@ -1,0 +1,23 @@
+{% extends "base.html" %} {% block content %}
+<h3>Tasks</h3>
+<table class="table table-sm table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Type</th>
+      <th>Status</th>
+      <th>Created</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in tasks %}
+    <tr>
+      <td class="text-monospace" style="font-size: 0.85rem">{{ t.id }}</td>
+      <td>{{ t.type }}</td>
+      <td><span class="badge bg-secondary">{{ t.status }}</span></td>
+      <td>{{ t.created_at }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
