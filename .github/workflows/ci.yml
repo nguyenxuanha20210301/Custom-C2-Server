@@ -50,7 +50,7 @@ jobs:
           alembic upgrade head
 
       - name: Run tests
-        working-directory: server
+        # chạy từ repo root để thấy thư mục tests/
         run: |
           pytest -q
 
