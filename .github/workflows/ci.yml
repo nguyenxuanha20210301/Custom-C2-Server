@@ -2,31 +2,55 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, master, develop]
   pull_request:
-    branches: [main, dev]
 
 jobs:
-  build:
+  test-and-build:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: customc2
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgresql://postgres:root@localhost:5432/customc2
+      JWT_SECRET: test_secret_please_change
+      AUTH_DISABLED: "false"
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: "3.11"
 
-      - name: Install deps
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          pip install -r server/requirements.txt -r requirements-dev.txt
 
-      - name: Run pre-commit
+      - name: Run migrations
+        working-directory: server
         run: |
-          pip install pre-commit
-          pre-commit run --all-files
+          alembic upgrade head
 
       - name: Run tests
         run: |
-          pytest -q --maxfail=1
+          pytest -q
+
+      - name: Build Docker image
+        run: |
+          docker build -t custom-c2-simulator:ci ./server

@@ -83,7 +83,7 @@ Notes: payload is descriptor only; do NOT include executable commands.
 - Enforce rate-limiting on register & auth endpoints.
 - Validate and whitelist uploaded MIME types and size (configurable: `MAX_UPLOAD_MB`).
 ## Example env vars (placeholders)
-- `DATABASE_URL=postgresql://postgres:password@db:5432/customc2` <<THAY_THEO_BAN>>
+- `DATABASE_URL=postgresql://postgres:root@db:5432/customc2` <<THAY_THEO_BAN>>
 - `MINIO_ENDPOINT=minio:9000` <<THAY_THEO_BAN>>
 - `JWT_SECRET=<32+ char secret>` <<THAY_THEO_BAN>>
 - `AGENT_DEFAULT_POLL_SEC=60`

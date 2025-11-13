@@ -1,54 +1,51 @@
 version: '3.8'
 services:
-  server:
-    image: custom-c2-simulator:dev
-    build:
-      context: ../server
-    ports:
-      - "8000:8000"
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
-      - AUTH_DISABLED=${AUTH_DISABLED}
-      - STORAGE_DRIVER=${STORAGE_DRIVER}
-      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
-      - MINIO_SECURE=${MINIO_SECURE}
-      - MINIO_BUCKET=${MINIO_BUCKET}
-      - LOCAL_STORAGE_DIR=${LOCAL_STORAGE_DIR}
-      - DEFAULT_ADMIN_USER=${DEFAULT_ADMIN_USER}
-      - DEFAULT_ADMIN_PASS=${DEFAULT_ADMIN_PASS}
-    volumes:
-      - serverdata:/app/data
-    depends_on:
-      - db
-      - minio
-
   db:
     image: postgres:15
+    container_name: infra-db-1
+    restart: unless-stopped
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=customc2
-    volumes:
-      - dbdata:/var/lib/postgresql/data
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: customc2
     ports:
       - "5432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
 
   minio:
     image: minio/minio
-    command: server /data --console-address ":9001"
+    container_name: infra-minio-1
+    restart: unless-stopped
     environment:
-      - MINIO_ROOT_USER=minio
-      - MINIO_ROOT_PASSWORD=minio123
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
       - minio_data:/data
 
+  server:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    container_name: infra-server-1
+    restart: unless-stopped
+    # ⭐⭐ dòng quan trọng: load env từ ../.env vào container
+    env_file:
+      - ../.env
+    depends_on:
+      - db
+      - minio
+    ports:
+      - "8000:8000"
+    volumes:
+      - serverdata:/app/data
+
 volumes:
   dbdata:
-  serverdata:
   minio_data:
+  serverdata:
+

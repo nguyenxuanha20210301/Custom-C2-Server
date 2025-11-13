@@ -1,29 +1,19 @@
-# Multi-stage build: slim image, non-root
-FROM python:3.11-slim AS base
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install deps
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy src
 COPY src ./src
+COPY alembic.ini .
+COPY alembic ./alembic
+COPY entrypoint.sh ./entrypoint.sh
 
-# Create non-root user
-RUN useradd -m appuser
+RUN useradd -m appuser && chmod +x /app/entrypoint.sh
 USER appuser
 
-# đảm bảo Python thấy /app/src
 ENV PYTHONPATH=/app/src
 
 EXPOSE 8000
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "/app/src"]
-
-COPY src ./src
-# thêm nếu chưa có:
-# ENV PYTHONPATH=/app/src
-# CMD ["python","-m","uvicorn","app.main:app","--host","0.0.0.0","--port","8000","--app-dir","/app/src"]
+CMD ["./entrypoint.sh"]

@@ -1,10 +1,15 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from pathlib import Path
+
 from ..db import get_db
 from ..db_models import Agent, Task, FileMeta
 
-templates = Jinja2Templates(directory="src/app/web/templates")
+# Tìm thư mục templates **dựa trên vị trí file này**, chạy được cả Docker lẫn local
+TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
 router = APIRouter()
 
 @router.get("")
@@ -14,7 +19,10 @@ def index(request: Request, db: Session = Depends(get_db)):
         "tasks": db.query(Task).count(),
         "files": db.query(FileMeta).count(),
     }
-    return templates.TemplateResponse("index.html", {"request": request, "title":"Dashboard", "stats": stats})
+    return templates.TemplateResponse(
+        "index.html",
+        {"request": request, "title": "Dashboard", "stats": stats},
+    )
 
 @router.get("/agents")
 def agents(request: Request, db: Session = Depends(get_db)):

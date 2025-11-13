@@ -4,8 +4,12 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+
+# env files
 .env
-*.env
+.env.local
+.env.prod
+infra/.env
 
 # Virtualenv
 venv/

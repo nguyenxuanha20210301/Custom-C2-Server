@@ -9,14 +9,17 @@ from .web import routes as web_routes
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Custom C2 Simulator API (Academic, Safe)",
-        version="0.4.0",
+        version="0.5.0",
         description="No remote code execution. Benign tasks only.",
     )
 
     app.add_middleware(MetricsMiddleware)
     app.add_api_route("/metrics", metrics_endpoint, methods=["GET"], include_in_schema=False)
 
-    Base.metadata.create_all(bind=engine)
+    if settings.environment == "development":
+        # dev local không chạy alembic thì vẫn tạo bảng
+        Base.metadata.create_all(bind=engine)
+
     with SessionLocal() as db:
         ensure_admin_exists(db)
 

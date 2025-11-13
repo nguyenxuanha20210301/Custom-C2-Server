@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: customc2-postgres-pvc
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customc2-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: customc2-postgres
+  template:
+    metadata:
+      labels:
+        app: customc2-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: password
+            - name: POSTGRES_DB
+              value: customc2
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: customc2-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customc2-postgres
+spec:
+  selector:
+    app: customc2-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
