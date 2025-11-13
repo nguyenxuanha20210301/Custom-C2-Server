@@ -2,11 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main, master]
   pull_request:
+    branches: [main, master]
 
 jobs:
-  test-and-build:
+  backend-ci:
     runs-on: ubuntu-latest
 
     services:
@@ -18,6 +19,7 @@ jobs:
           POSTGRES_DB: customc2
         ports:
           - 5432:5432
+        # đợi postgres healthy trước khi chạy test
         options: >-
           --health-cmd="pg_isready -U postgres"
           --health-interval=10s
@@ -25,12 +27,29 @@ jobs:
           --health-retries=5
 
     env:
-      DATABASE_URL: postgresql://postgres:root@localhost:5432/customc2
-      JWT_SECRET: test_secret_please_change
+      # Env cho app trong CI (giống docker-compose)
+      ENVIRONMENT: test
+      LOG_LEVEL: info
+      API_PREFIX: /api/v1
+
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/customc2
+      JWT_SECRET: test_jwt_secret_change_me_please
       AUTH_DISABLED: "false"
+      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      JWT_ISSUER: custom-c2-server
+
+      STORAGE_DRIVER: local
+      LOCAL_STORAGE_DIR: /tmp/c2-data
+
+      DEFAULT_ADMIN_USER: admin
+      DEFAULT_ADMIN_PASS: ChangeMe_123!
+
+      PYTHONPATH: server/src
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,19 +57,27 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
+        working-directory: server
         run: |
           python -m pip install --upgrade pip
-          pip install -r server/requirements.txt -r requirements-dev.txt
+          pip install -r requirements.txt
+          pip install pytest flake8
 
-      - name: Run migrations
+      - name: Run Alembic migrations
         working-directory: server
         run: |
           alembic upgrade head
 
       - name: Run tests
+        working-directory: server
         run: |
           pytest -q
 
+      - name: Lint with flake8
+        working-directory: server
+        run: |
+          flake8 src tests
+
       - name: Build Docker image
         run: |
-          docker build -t custom-c2-simulator:ci ./server
+          docker build -t custom-c2-simulator:ci server
