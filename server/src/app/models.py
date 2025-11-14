@@ -1,9 +1,21 @@
-from typing import List, Optional, Dict, Any, Literal
-from uuid import UUID
+# server/src/app/models.py
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Generic, TypeVar
+
 from pydantic import BaseModel, Field
 
-Platform = Literal["linux", "windows", "macos", "other"]
-TaskType = Literal["collect-metrics", "download-config", "upload-report"]
+T = TypeVar("T")
+
+
+# ========= Health =========
+
+
+class HealthResponse(BaseModel):
+    status: str = "ok"
+
+
+# ========= Auth / Users =========
 
 
 class LoginRequest(BaseModel):
@@ -13,74 +25,176 @@ class LoginRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
-    refresh_token: Optional[str] = None
-    expires_in: int = 3600
+    token_type: str = "bearer"
 
 
-# Agents
+class UserOut(BaseModel):
+    id: int
+    username: str
+    role: str
+
+
+# ========= Agents & Heartbeats =========
+
+
 class AgentRegisterRequest(BaseModel):
     hostname: str
-    platform: Platform = "linux"
-    tags: Optional[List[str]] = Field(default_factory=list)
+    platform: str
+    tags: List[str] | None = None
     public_key: Optional[str] = None
 
 
 class AgentRegisterResponse(BaseModel):
-    agent_id: UUID
-    poll_interval: int = 60
-    config: Dict[str, Any] = Field(default_factory=dict)
+    agent_id: str
+    poll_interval: int
+    config: Dict[str, Any]
 
 
 class HeartbeatRequest(BaseModel):
-    uptime: int
-    load: float
-    ip: Optional[str] = None
-    tags: Optional[List[str]] = Field(default_factory=list)
+    """
+    Payload heartbeat từ agent gửi về server.
+
+    Trong test chỉ gửi:
+      { "uptime": 10, "load": 0.1 }
+
+    Nên:
+      - ip phải là optional, có default None
+    """
+    uptime: int = Field(..., description="Uptime (giây) mô phỏng của agent")
+    load: float = Field(..., description="Load trung bình mô phỏng (0.0-1.0)")
+    ip: Optional[str] = Field(
+        default=None,
+        description="Địa chỉ IP mô phỏng; có thể bỏ trống trong test",
+    )
 
 
-# Tasks
 class TaskItem(BaseModel):
-    task_id: UUID
-    type: TaskType
-    payload: Dict[str, Any] = Field(default_factory=dict)
+    task_id: str
+    type: str
+    payload: Dict[str, Any] | None = None
     created_at: str
 
 
-class CreateTaskRequest(BaseModel):
-    agent_ids: List[UUID]
-    type: TaskType
-    meta: Dict[str, Any] = Field(default_factory=dict)
-    expires_in: Optional[int] = 3600
-
-
-class CreateTaskResponse(BaseModel):
-    task_id: UUID
-
-
-# Files
 class FileUploadResponse(BaseModel):
-    file_id: UUID
+    file_id: str
     url: str
 
 
-class TaskFilter(BaseModel):
-    status: Optional[str] = None
-    type: Optional[TaskType] = None
-    agent_id: Optional[UUID] = None
+class AgentTaskAck(BaseModel):
+    """
+    Body cho /agents/{id}/ack/{task_id}.
+    Hiện tại không cần field nào, nhưng để sẵn cho future.
+    """
+    note: Optional[str] = None
+
+
+# ========= Simulated C2 Specs & Result (Phase 9–10) =========
+
+
+class SimExecSpec(BaseModel):
+    """
+    Mô tả một "command" mô phỏng.
+
+    Ví dụ:
+      {
+        "name": "ps",
+        "args": ["-aux"]
+      }
+
+    Agent simulator chỉ dùng để tra vào catalog và trả stdout giả.
+    """
+
+    name: str = Field(..., description="Tên command mô phỏng, vd: whoami, ps, netstat")
+    args: List[str] = Field(default_factory=list)
+
+
+class SimPersistSpec(BaseModel):
+    """
+    Mô tả một cơ chế persistence mô phỏng.
+    """
+
+    mechanism: str = Field(..., description="Kiểu persistence mô phỏng, vd: startup_folder")
+    label: str = Field(..., description="Tên logic của implant/agent")
+
+
+class SimDeliverySpec(BaseModel):
+    """
+    Mô tả nhiệm vụ 'payload delivery' mô phỏng.
+    """
+
+    artifact_name: str = Field(..., description="Tên payload logic, vd: benign-tool.zip")
+    size_kb: int = Field(..., ge=0, description="Kích thước mô phỏng (KB)")
+    stage: str = Field(
+        "staging",
+        description="Giai đoạn: staging / delivery / execution (chỉ mang tính logical)",
+    )
+
+
+class TaskSimResult(BaseModel):
+    """
+    Kết quả mô phỏng từ agent. Không chứa output thật từ hệ thống.
+
+    Tùy loại task, một số field sẽ được sử dụng.
+    """
+
+    kind: str = Field(..., description="exec / persist / delivery / noop")
+    success: bool = Field(True)
+
+    # Cho sim.exec
+    stdout: Optional[str] = None
+    stderr: Optional[str] = None
+    exit_code: Optional[int] = None
+
+    # Cho sim.persist
+    persistence_mechanism: Optional[str] = None
+    installed: Optional[bool] = None
+
+    # Cho sim.delivery
+    artifact_name: Optional[str] = None
+    stage: Optional[str] = None
+
+
+# ========= Tasks & Pagination =========
+
+
+class CreateTaskRequest(BaseModel):
+    """
+    Request tạo task từ operator.
+
+    type:
+      - collect-metrics      -> Phase 4/5
+      - sim.exec             -> Phase 9: mô phỏng command / reverse shell
+      - sim.persist          -> Phase 9: mô phỏng persistence
+      - sim.delivery         -> Phase 10: mô phỏng payload delivery
+    """
+
+    agent_ids: List[str]
+    type: str = Field(..., description="Loại nhiệm vụ")
+    meta: Dict[str, Any] | None = Field(
+        default=None,
+        description="Metadata cho từng loại task (tùy type).",
+    )
+
+
+class CreateTaskResponse(BaseModel):
+    task_id: str
 
 
 class TaskSummary(BaseModel):
-    id: UUID
-    type: TaskType
+    id: str
+    type: str
     status: str
     created_at: str
 
 
-class AgentTaskAck(BaseModel):
-    ack: bool = True
-
-
 class AgentTaskUpdate(BaseModel):
-    status: str  # running|done|failed|canceled
-    result: Dict[str, Any] | None = None
-    error: str | None = None
+    status: str
+    error: Optional[str] = None
+    result: Optional[Dict[str, Any]] = None
+
+
+class Page(BaseModel, Generic[T]):
+    items: List[T]
+    total: int
+    page: int
+    size: int
