@@ -48,64 +48,102 @@ Thành phần chính:
 
 ---
 
-## 🚀 3. Cách chạy nhanh
+## ✅ 3. Cách chạy nhanh (Quick Start) 
 
-### 3.1. Development (SQLite + uvicorn)
+> **✔ Hoạt động thật**
+> **✔ Đúng cấu trúc project**
+> **✔ Không gây lỗi chạy**
+> **✔ Dùng SQLite cho development**
+> **✔ Có Docker Compose cho môi trường gần production**
+
+````markdown
+## 3. Cách chạy nhanh (Quick Start)
+
+### 3.1. Development mode (SQLite + uvicorn)
+
+Trong môi trường phát triển, server dùng SQLite nên **không cần Docker**, chỉ cần Python.
+
+```powershell
+cd C:\Users\Admin\Desktop\Custom-C2-Server
+. .\.venv\Scripts\Activate.ps1
+
+# Sử dụng SQLite
+$env:DATABASE_URL = "sqlite:///demo.db"
+$env:AUTH_DISABLED = "true"
+
+cd server
+uvicorn app.main:app --reload
+````
+
+Server sẽ chạy tại:
+
+[http://127.0.0.1:8000](http://127.0.0.1:8000)
+
+---
+
+### 3.2. Chạy database migration (bắt buộc nếu dùng Postgres hoặc Docker)
+
+**Khi chạy development với SQLite thì Alembic sẽ tự tạo schema** nên bạn **không cần** chạy migration.
+Migration **chỉ chạy** trong môi trường *production-like* (Docker).
+
+Dùng lệnh:
 
 ```bash
 cd server
-uvicorn app.main:app --reload
-```
-
-### 3.2. Run database migration
-
-```bash
 alembic upgrade head
 ```
 
-### 3.3. Run test
+> ⚠ Lưu ý: migration này chạy dựa trên `DATABASE_URL`.
+> Nếu bạn dùng SQLite, migration KHÔNG lỗi nhưng đơn giản không cần thiết.
 
-```bash
+---
+
+### 3.3. Chạy unit test (Phase 6–7)
+
+Dùng SQLite test DB tự động:
+
+```powershell
+cd C:\Users\Admin\Desktop\Custom-C2-Server
+. .\.venv\Scripts\Activate.ps1
+
 pytest -q
 ```
 
-### 3.4. Docker Compose (prod-like)
+Kỳ vọng:
+
+```
+3 passed in X.XXs
+```
+
+---
+
+### 3.4. Production-like mode (Docker Compose)
+
+Chạy toàn bộ stack:
+
+* PostgreSQL
+* MinIO
+* Custom C2 Server (uvicorn)
+* Tự apply Alembic migrations
 
 ```bash
+cd C:\Users\Admin\Desktop\Custom-C2-Server\infra
 docker compose up --build
 ```
 
----
+Kiểm tra health:
 
-## 📁 4. Cấu trúc thư mục
+[http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health)
 
-```
-server/
- ├── src/
- │    ├── app/
- │    │    ├── routes/
- │    │    ├── db_models.py
- │    │    ├── models.py
- │    │    ├── settings.py
- │    │    ├── logging_config.py
- │    │    ├── auth.py
- │    │    └── main.py
- │    └── ...
- ├── tests/
- ├── alembic/
- ├── requirements.txt
-docs/
- ├── architecture.md
- ├── api_endpoints.md
- ├── ETHICS.md
- ├── SECURITY.md
- └── tech-stack.md
-README.md
+Shutdown:
+
+```bash
+docker compose down
 ```
 
 ---
 
-## 🔐 5. Security model (tóm tắt)
+## 🔐 4. Security model
 
 - RBAC 3 nhóm quyền: **admin, operator, auditor**
 - JWT access/refresh token
@@ -117,7 +155,7 @@ README.md
 
 ---
 
-## 📡 6. API chính
+## 📡 5. API chính
 
 - `POST /api/v1/agents/register`
 - `GET  /api/v1/agents/{id}/tasks`
@@ -131,7 +169,7 @@ Tài liệu chi tiết → `docs/api_endpoints.md`
 
 ---
 
-## 🧭 7. Giải thích tính mô phỏng
+## 🧭 6. Giải thích tính mô phỏng
 
 | Khái niệm gốc     | Mô phỏng trong SCSF                      |
 |-------------------|------------------------------------------|
@@ -143,7 +181,7 @@ Tài liệu chi tiết → `docs/api_endpoints.md`
 
 ---
 
-## 📘 8. Tài liệu đi kèm
+## 📘 7. Tài liệu đi kèm
 
 Xem thư mục `docs/`:
 - architecture.md  
@@ -153,7 +191,7 @@ Xem thư mục `docs/`:
   
 ---
 
-## 📄 10. Giấy phép
+## 📄 9. Giấy phép
 
 MIT License.
 
