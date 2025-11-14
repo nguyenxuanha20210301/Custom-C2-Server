@@ -72,7 +72,7 @@ $env:DATABASE_URL = "sqlite:///demo.db"
 $env:AUTH_DISABLED = "true"
 
 cd server
-uvicorn app.main:app --reload
+uvicorn src.app.main:app --reload
 ````
 
 Server sẽ chạy tại:
